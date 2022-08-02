@@ -5,7 +5,6 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from auth import AuthHandler, TokenType
-from typing import Union, final
 from dataclasses import dataclass
 
 load_dotenv(".env")
