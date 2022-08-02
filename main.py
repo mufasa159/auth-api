@@ -13,7 +13,7 @@ app = FastAPI()
 auth_handler = AuthHandler()
 
 # database configurations
-DB_URL = os.environ.get("DB_URL")
+DB_URL = os.environ.get("DATABASE_URL")
 DB_USER = DB_URL.split(':')[1][2:]
 DB_DATABASE = DB_URL.split(':')[3].split('/')[1]
 DB_HOST = DB_URL.split(':')[2].split('@')[1]
