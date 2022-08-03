@@ -143,7 +143,7 @@ async def login(user_data: UserLogin, conn = Depends(connection)):
       conn.commit()
 
       if len(user) == 0:
-         return {"message": "user doesn't exist"}
+         return {"message": "User doesn't exist"}
 
       isCorrectPassword = user[0][7].encode('utf-8') == bcrypt.hashpw(user_data.password.encode('utf-8'), user[0][7].encode('utf-8'))
       
@@ -166,12 +166,12 @@ async def login(user_data: UserLogin, conn = Depends(connection)):
          conn.commit()
          
          return {
-            "message": "login successful",
+            "message": "Login successful",
             "access-token": access_token,
             "refresh-token": refresh_token
          }
       else:
-         return {"user-data": user}
+         return {"message": "Incorrect password"}
 
    finally:
       conn.close()
@@ -211,8 +211,7 @@ def validate_refresh_token(token: Token, conn=Depends(connection)):
       return {
          "message": "token validated",
          "new-access-token": new_access_token,
-         "new-refesh-token": new_refresh_token,
-         "dta": token_data
+         "new-refesh-token": new_refresh_token
       }
    finally:
       conn.close()
@@ -223,7 +222,7 @@ def delete_refresh_token(token: Token, conn=Depends(connection)):
    try:
       cursor = conn.cursor()
       cursor.execute("DELETE FROM token_management WHERE refresh_token=%s;", (token.value,))
-      return {"message": "token deleted"}
+      return {"message": "Token has been deleted successfully"}
    finally:
       conn.close()
 
