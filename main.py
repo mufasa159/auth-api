@@ -159,7 +159,10 @@ async def login(user_data: UserLogin, conn = Depends(connection)):
          cursor.execute("UPDATE accounts SET last_login_at=CURRENT_TIMESTAMP, last_login_ip=%s, login_count=login_count+1 WHERE uid=%s", ("localhost", user[0][0])) # Implement IP address fetching
          cursor.execute("SELECT * FROM token_management WHERE uid=%s ORDER BY created_at DESC;", (user[0][0],))
          latest_token = cursor.fetchall()
-         cursor.execute("INSERT INTO token_management (uid, access_token, refresh_token, pair_count) VALUES (%s, %s, %s, %s);", (user[0][0], access_token, refresh_token, latest_token[0][5] + 1))
+         if len(latest_token) == 0:
+            cursor.execute("INSERT INTO token_management (uid, access_token, refresh_token) VALUES (%s, %s, %s);", (user[0][0], access_token, refresh_token))
+         else:
+            cursor.execute("INSERT INTO token_management (uid, access_token, refresh_token, pair_count) VALUES (%s, %s, %s, %s);", (user[0][0], access_token, refresh_token, latest_token[0][5] + 1))
          conn.commit()
          
          return {
