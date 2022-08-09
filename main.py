@@ -160,9 +160,9 @@ async def login(user_data: UserLogin, conn = Depends(connection)):
          cursor.execute("SELECT * FROM token_management WHERE uid=%s ORDER BY created_at DESC;", (user[0][0],))
          latest_token = cursor.fetchall()
          if len(latest_token) == 0:
-            cursor.execute("INSERT INTO token_management (uid, refresh_token) VALUES (%s, %s, %s);", (user[0][0], refresh_token))
+            cursor.execute("INSERT INTO token_management (uid, refresh_token) VALUES (%s, %s);", (user[0][0], refresh_token))
          else:
-            cursor.execute("INSERT INTO token_management (uid, refresh_token, pair_count) VALUES (%s, %s, %s, %s);", (user[0][0], refresh_token, latest_token[0][5] + 1))
+            cursor.execute("INSERT INTO token_management (uid, refresh_token, pair_count) VALUES (%s, %s, %s);", (user[0][0], refresh_token, latest_token[0][5] + 1))
          conn.commit()
          
          return {
@@ -205,7 +205,7 @@ def validate_refresh_token(token: Token, conn=Depends(connection)):
       cursor.execute("SELECT * FROM token_management WHERE uid=%s ORDER BY created_at DESC;", (uid,))
       latest_token = cursor.fetchall()
       cursor.execute("UPDATE token_management SET refresh_token_use_count=refresh_token_use_count+1, refresh_token_last_used_at=CURRENT_TIMESTAMP WHERE refresh_token=%s;", (token.value,))
-      cursor.execute("INSERT INTO token_management (uid, refresh_token, pair_count) VALUES (%s, %s, %s, %s);", (uid, new_refresh_token, latest_token[0][5] + 1))
+      cursor.execute("INSERT INTO token_management (uid, refresh_token, pair_count) VALUES (%s, %s, %s);", (uid, new_refresh_token, latest_token[0][5] + 1))
       conn.commit()
    
       return {
