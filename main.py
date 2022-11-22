@@ -1,20 +1,34 @@
 import os
-import psycopg2
-import asyncio
-import asyncpg
-import bcrypt
 from fastapi import FastAPI, Depends, HTTPException, Query
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from auth import AuthHandler, TokenType
 from dataclasses import dataclass
+import bcrypt
+from auth import AuthHandler, TokenType
+import asyncpg
+
 
 load_dotenv(".env")
-app = FastAPI()
 auth_handler = AuthHandler()
+app = FastAPI(
+   title = "Authentication API",
+   description = "API for authenticating user",
+   version = "1.0",
+   contact = {
+      "name"  : "Mufasa A.",
+      "url"   : "https://mufasa.cc",
+      "email" : "hello@mufasa.cc",
+   },
+   license_info = {
+      "name"  : "BSD-3-Clause",
+      "url"   : "https://opensource.org/licenses/BSD-3-Clause",
+   },
+   # docs_url = None,
+   # redoc_url = "/docs",
+)
 
 # database configurations
-DB_URL = os.environ.get("DATABASE_URL")
+DB_URL = os.environ.get("DB_URL")
 DB_USER = DB_URL.split(':')[1][2:]
 DB_DATABASE = DB_URL.split(':')[3].split('/')[1]
 DB_HOST = DB_URL.split(':')[2].split('@')[1]
@@ -25,11 +39,10 @@ DB_PASSWORD = DB_URL.split(':')[2].split('@')[0]
 # connect to postgres database
 async def connection():
    return await asyncpg.connect(
-      database=DB_DATABASE,
-      user=DB_USER,
+      user=DB_USER, 
       password=DB_PASSWORD,
-      host=DB_HOST,
-      port=DB_PORT
+      database=DB_DATABASE, 
+      host=DB_HOST
    )
 
 
