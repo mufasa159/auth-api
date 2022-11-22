@@ -103,10 +103,11 @@ If you want, you can set up you own local database too. The original schema for 
 
 - [ ] User authentication implementation
    - [x] Role-based access to certain routes
-   - [x] Generate bearer token on login
+   - [x] Handling bearer token and refresh token
    - [x] Protect routes using `auth_wrapper`
-   - [ ] Generate refresh token
-   - [ ] Figure out all other kinds of token and how to use/implement them for authentication and authorization
+   - [ ] Review and Test
 - [ ] Dockerize the entire project
 - [ ] Separate Authentication code and Classes from `main.py`
 - [ ] Organize folder structure
+- [ ] Make functions asynchronous
+- [ ] Replace psycopg2 with asyncpg

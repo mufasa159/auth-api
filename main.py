@@ -1,5 +1,7 @@
 import os
 import psycopg2
+import asyncio
+import asyncpg
 import bcrypt
 from fastapi import FastAPI, Depends, HTTPException, Query
 from dotenv import load_dotenv
@@ -21,8 +23,8 @@ DB_PASSWORD = DB_URL.split(':')[2].split('@')[0]
 
 
 # connect to postgres database
-def connection():
-   return psycopg2.connect(
+async def connection():
+   return await asyncpg.connect(
       database=DB_DATABASE,
       user=DB_USER,
       password=DB_PASSWORD,
@@ -181,7 +183,8 @@ async def login(user_data: UserLogin, conn = Depends(connection)):
 def validate_refresh_token(token: Token, conn=Depends(connection)):
    
    # todo:
-   # - remove old refresh token from database
+   # - invalidate old refresh tokens from database immediately
+   # - add column in token table to track validation
    # - perhaps a better pair count system for tokens
    
    uid = auth_handler.decode_token(token.value, TokenType.refresh)
