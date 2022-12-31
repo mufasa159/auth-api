@@ -1,6 +1,4 @@
-# Exibit - Backend API
-
-Frontend is currently not connected to this backend. But once it's connected, this API server needs to be running in background while accessing frontend.
+# Auth API
 
 **Contents**
 - [Setup Local Dev Environment](#setup-local-dev-environment)
@@ -8,30 +6,31 @@ Frontend is currently not connected to this backend. But once it's connected, th
 - [Backlog](#backlog)
 
 ---
+
 ## Setup Local Dev Environment
 
-
 ### Step 1: Basics
-Open terminal or shell. Once you're in the main project folder, `cd` to this directory
+Open terminal or shell. Go to the root directory of this project.
 ```
-cd server
-```
-
-Install pipenv if you don't already have it 
-```
-pip3 install pipenv
+cd auth-api
 ```
 
-Enter virtual environment by running the following command
-```
-pipenv shell
-```
-Getting errors on VS Code? See [Note](#for-vs-code-users)
+Install PDM if you don't already have it.
+Installation instructions can be found [here](https://pdm.fming.dev/latest/).
 
-Install necessary dependencies/packages:
+Run the following command to install the dependency packages.
 ```
-pipenv install -r requirements.txt   
+pdm install
 ```
+
+Activate virtual environment by running:
+```
+pdm venv activate
+```
+
+You can use PDM to add any libraries to the project.  
+There is no need to worry about creating or activating your virtual environment.
+
 
 ### Step 2: The Environment Variables
 Get `.env` file from one of the devs working on the project to connect to database and place in server's root directory.  
@@ -46,42 +45,13 @@ For `JWT_SECRET` in `.env` file, you can regenerate new secret using the followi
 openssl rand -hex 32
 ```
 
-
 ### Step 3: Running the API Server
 Start API server using the following command:
 ```
-uvicorn main:app --reload  
+pdm run uvicorn main:app --reload  
 ```
 
 FastAPI uses Swagger UI to display all the API routes and test them. Once the server is running, go to `127.0.0.1:8000/docs` (or wherever it's running at + `/docs`) to see the UI version of API.
-
----
-
-<br/>
-
-### For VS Code users
-If you see an error after running `pipenv shell`, you can try the following:
-```
-pipenv --venv
-rm -rf <output-from-prevous-command>
-```
-It will find the path to the virtual env folder and delete it, so that you can start it new.   
-Try the `pipenv shell` command again. Should work this time
-
-<br/>  
-You may also notice import errors while running the server, or maybe some annoying squiggly line under the import statements. To resolve this,
-
-1. Step 1
-   - Make sure you have necessary Python extensions installed
-   - `control + shift + p` (Windows)   
-   - `command + shift + p` (MacOS)
-2. Step 2
-   - Type `Python > Select Interpreter`  
-   - Press `Enter`
-3. Step 3
-   - Select whichever has `PipEnv` written in blue on the right
-
-<br/>
 
 ---
 
