@@ -1,0 +1,24 @@
+[tool.pdm]
+
+[project]
+name = "Auth API"
+version = "1.2.0"
+description = "Authentication middleware for management"
+authors = [
+    {name = "mufasa159", email = "mufasa159@proton.me"},
+]
+dependencies = [
+    "fastapi>=0.88.0",
+    "uvicorn==0.18.2",
+    "python-dotenv==0.20.0",
+    "PyJWT==2.4.0",
+    "bcrypt==3.2.2",
+    "asyncpg==0.27.0",
+    "sqlalchemy==1.4.44",
+]
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"

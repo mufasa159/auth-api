@@ -7,3 +7,5 @@ Pipfile.lock
 __pycache__
 .vscode
 notes.py
+.pdm.toml
+pdm.lock
