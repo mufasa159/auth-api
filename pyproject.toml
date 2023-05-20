@@ -1,16 +1,15 @@
 [tool.pdm]
 
 [project]
-name = "Auth API"
-version = "1.2.0"
-description = "Authentication middleware for management"
+name = "Authentication API"
+version = "2.0"
+description = "Authentication middleware for user accounts management"
 authors = [
-    {name = "mufasa159", email = "mufasa159@proton.me"},
+    {name = "mufasa159", email = "hello@mufasa.cc"},
 ]
 dependencies = [
     "fastapi>=0.88.0",
     "uvicorn==0.18.2",
-    "python-dotenv==0.20.0",
     "PyJWT==2.4.0",
     "bcrypt==3.2.2",
     "asyncpg==0.27.0",
