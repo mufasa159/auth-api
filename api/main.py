@@ -216,11 +216,14 @@ async def validate_refresh_token(token: Token):
       )
 
 
-@app.get('/logout', summary="Delete token")
-async def delete_refresh_token(token: Token):
-   try:
-      await app.state.db.execute("DELETE FROM token_management WHERE refresh_token=$1;", token.value)
-      return {"message": "Token has been deleted successfully"}
-   except Exception as e:
-      raise HTTPException(status_code=500, detail=e)
+@app.delete('/logout', summary="Delete token")
+async def delete_refresh_token():
+   """
+   Doesn't do anything. Just here for documentation purposes.  
+   If you wish to logout, just remove the token from your client.
+   """
+   return {
+      "status_code" : 410,
+      "detail" : "This route is gone. Here's what you can do instead: (1) delete the token from your client, or (2) blacklist the token, or (3) make token expiration short and rotate them often."
+   }
 
