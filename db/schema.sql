@@ -1,6 +1,5 @@
---- https://www.exibit.me 
---- postgres database schema
---- created on 2022-08-02
+--- PostgreSQL Database Schema
+--- Created on 2022-08-02 by @mufasa159
 
 
 --- To be used for creating UIDs in `unique_id()` function
@@ -33,25 +32,23 @@ $$ language 'plpgsql';
 --- Set timezone for Postgres server
 SET timezone = 'America/New_York';
 
---- Enum to store role of account user
+--- Enum for user roles
 CREATE TYPE ROLE as ENUM ('admin', 'maintainer', 'user');
 
---- Table to store user data
-CREATE TABLE "accounts" (
+--- Table for storing user data
+CREATE TABLE accounts (
 	"uid" VARCHAR(8) PRIMARY KEY NOT NULL UNIQUE,
-	"name_first" VARCHAR(30) NOT NULL,
-	"name_last" VARCHAR(30) NOT NULL,
+	"name_first" VARCHAR(20) NOT NULL,
+	"name_last" VARCHAR(20) NOT NULL,
 	"image" TEXT NULL,
 	"role" ROLE NOT NULL DEFAULT 'user',
-	"username" VARCHAR(30) NOT NULL,
+	"username" VARCHAR(20) NOT NULL,
 	"email" VARCHAR(60) NOT NULL UNIQUE,
 	"hash" VARCHAR(255) NOT NULL,
 	"bio" VARCHAR(500) NULL,
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"last_login_at" TIMESTAMPTZ NULL,
-	"last_login_ip" VARCHAR(300) NULL,
-	"current_login_at" TIMESTAMPTZ NULL,
-	"current_login_ip" VARCHAR(300) NULL,
+	"last_login_ip" VARCHAR(45) NULL,
 	"login_count" INTEGER DEFAULT 0,
 	"confirmed_email" BOOLEAN DEFAULT FALSE
 );
@@ -60,15 +57,12 @@ CREATE TABLE "accounts" (
 CREATE TRIGGER trigger_accounts_genid BEFORE INSERT ON accounts FOR EACH ROW EXECUTE PROCEDURE unique_id();
 
 
---- Table for managing authentication tokens
---- Mainly used for performing refresh token rotation
-CREATE TABLE "token_management"(
-	"id" SERIAL PRIMARY KEY NOT NULL UNIQUE,
-	"uid" VARCHAR(8) NOT NULL,
-	"access_token" TEXT NOT NULL,
-	"refresh_token" TEXT NOT NULL,
-	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"pair_count" INTEGER NOT NULL DEFAULT 0,
-	"refresh_token_use_count" INTEGER DEFAULT 0 NOT NULL,
-	"refresh_token_last_used_at" TIMESTAMPTZ NULL
-);
+--- Table for managing authentication tokens, mainly used for performing refresh token rotation
+-- CREATE TABLE token_management(
+-- 	"id" SERIAL PRIMARY KEY NOT NULL UNIQUE,
+-- 	"uid" VARCHAR(8) NOT NULL,
+-- 	"refresh_token" TEXT NOT NULL,
+-- 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- 	"refresh_token_use_count" INTEGER DEFAULT 0 NOT NULL,
+-- 	"refresh_token_last_used_at" TIMESTAMPTZ NULL
+-- );
