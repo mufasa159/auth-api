@@ -1,9 +1,8 @@
-# Auth API
+# Authentication API
 
 **Contents**
 - [Setup Local Dev Environment](#setup-local-dev-environment)
 - [Connect to Database](#connect-to-database)
-- [Backlog](#backlog)
 
 ---
 
