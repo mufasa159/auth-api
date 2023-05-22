@@ -1,6 +1,5 @@
 from fastapi import Depends, HTTPException, Request
-from models import NewUser, UserLogin, Profile, Token
-from auth import TokenType
+from models import NewUser, UserLogin, Profile, Token, TokenType
 from initialize import app, auth_handler
 from config import settings
 import bcrypt
