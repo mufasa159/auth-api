@@ -49,8 +49,8 @@ async def get_users(uid = Depends(auth_handler.auth_wrapper)):
          
          if len(r) == 0:
             return {
-               "status_code": 401,
-               "detail" : "Invalid token"
+               "status_code": 201,
+               "detail" : "Invalid UID in token"
             }
          
          user = r[0]
@@ -159,13 +159,6 @@ async def login(user_data: UserLogin, request: Request):
          refresh_token = auth_handler.encode_token(user['uid'], TokenType.refresh)   # to create new token after expired
          
          await app.state.db.execute("UPDATE accounts SET last_login_at=CURRENT_TIMESTAMP, last_login_ip=$1, login_count=login_count+1 WHERE uid=$2", str(request.client.host), user['uid'])
-         r = await app.state.db.fetch("SELECT * FROM token_management WHERE uid=$1 ORDER BY created_at DESC;", user['uid'])
-         
-         if len(r) == 0:
-            await app.state.db.execute("INSERT INTO token_management (uid, refresh_token) VALUES ($1, $2);", user['uid'], refresh_token)
-         else:
-            latest_token = r[0]
-            await app.state.db.execute("INSERT INTO token_management (uid, refresh_token, pair_count) VALUES ($1, $2, $3);", user['uid'], refresh_token, latest_token['pair_count']+1)
          
          return {
             "status_code" : 200,
