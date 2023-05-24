@@ -208,6 +208,29 @@ async def validate_refresh_token(token: Token):
       )
 
 
+@app.post('/validate', summary="Validate access token")
+def validate_access_token(token: Token):
+   try:
+      uid = auth_handler.decode_token(token.value, TokenType.access)
+      
+      if uid["message"] is not None:
+         return {
+            "status_code" : 401,
+            "detail" : uid["message"]
+         }
+      
+      return {
+         "status_code" : 200,
+         "detail" : "Token is valid"
+      }
+      
+   except Exception as e:
+      raise HTTPException(
+         status_code = 500,
+         detail = e
+      )
+
+
 @app.delete('/logout', summary="Delete token")
 async def delete_refresh_token():
    """
