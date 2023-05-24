@@ -3,6 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from datetime import datetime, timedelta
 from starlette.config import Config
 from models import TokenType
+from config import settings
 import jwt
 
 env = Config("../.env")
@@ -15,7 +16,7 @@ class AuthHandler():
       if token_type == TokenType.access:
          secret = env("ACCESS_TOKEN_SECRET")
          payload = {
-            'exp': datetime.utcnow() + timedelta(days=0, minutes=60),
+            'exp': datetime.utcnow() + timedelta(days=0, minutes=settings.access_token_expiration_minute),
             'iat': datetime.utcnow(),
             'sub': user_id
          }

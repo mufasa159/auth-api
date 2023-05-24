@@ -35,4 +35,4 @@ class TokenType(Enum):
 
    
 class Token(BaseModel):
-   value: str = Query(max_length=128, min_length=128)
+   value: str = Query(max_length=255, min_length=64)
