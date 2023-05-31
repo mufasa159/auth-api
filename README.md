@@ -8,8 +8,10 @@
 
 ## Setup Local Dev Environment
 
+**⚠️ Read everything before you proceed. Don't run all the commands you see. Some are just examples.**
+
 ### Step 1: Basics
-Open terminal or shell. Go to the root directory of this project.
+Clone this GitHub repository. Then open terminal or shell and go to the root directory of this project.
 ```
 cd auth-api
 ```
@@ -17,13 +19,18 @@ cd auth-api
 Install PDM if you don't already have it.
 Installation instructions can be found [here](https://pdm.fming.dev/latest/).
 
-Run the following command to install the dependency packages.
+Run the following command to install all the dependencies.
 ```
 pdm install
 ```
 
-You can use PDM to add any libraries to the project.  
-There is no need to worry about creating or activating your virtual environment.
+You can use PDM to add any packages/libraries to the project if needed. For example: 
+```
+pdm add requests                        # add requests
+pdm add requests==2.25.1                # add requests with version constraint
+pdm add requests[socks]                 # add requests with extra dependency
+pdm add "flask>=1.0" flask-sqlalchemy   # add multiple dependencies with different specifiers
+``` 
 
 
 ### Step 2: The Environment Variables
@@ -33,9 +40,7 @@ Copy `.env.example` file in the root directory.
 cp .env.example .env 
 ```
 
-Get `.env` secrets from one of the devs working on the project to connect to database.  
-
-For access/refresh tokens in `.env` file, you can regenerate new secret using the following command:
+Populate the `.env` secrets after [setting up](#connect-to-database) the Postgres database. For the tokens, you can regenerate new secret using the following command:
 ```
 openssl rand -hex 32
 ```
@@ -44,7 +49,7 @@ openssl rand -hex 32
 Start API server using the following command:
 ```
 cd api
-pdm run uvicorn main:app --reload  
+uvicorn main:app --reload  
 ```
 
 FastAPI uses Swagger UI and ReDoc to display all the API routes and/or test them. Once the server is running locally, go to `/docs` or `/redoc` route to see the API documentation.
@@ -53,12 +58,10 @@ FastAPI uses Swagger UI and ReDoc to display all the API routes and/or test them
 
 ## Connect to Database
 
-We're using Postgres for storing user data while their respective media files are being stored somehwere else.  
+Lookup how to install and run Postgres on your operating system and how to create a Postgres database. After creating a database, run the SQL commands in `/db/schema.sql` to create a new table for the users. Then update the `.env` file with the database credentials.
 
-Ideally there should be a separate database for development, but currently everything is done in the main database. The main configs you need to connect to DB is in `.env` file. Once you run the API server, it should automatically connect to PostgreSQL DB based on the configs in `.env` file.    
-
-But if you want to connect to database separately using terminal for interaction purposes, Google how to do that. Or, you may use the following apps:
+Once you have the database set up, if you want to connect to the database separately for interaction purposes, you can use the following apps:
 - [Postico](https://eggerapps.at/postico/) (Simple UI/UX)
 - [PgAdmin4](https://www.pgadmin.org/)
 
-If you want, you can set up you own local database, too. The original schema for database can be found at `/db/schema.sql`. If you're using local database, make sure to update your environment variables in `.env` file.
+If you wish to use PSQL shell to interact with the DB, search online how to do that.
