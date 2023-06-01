@@ -16,13 +16,14 @@ class AuthHandler():
       if token_type == TokenType.access:
          secret = env("ACCESS_TOKEN_SECRET")
          payload = {
-            'exp': datetime.utcnow() + timedelta(days=0, minutes=settings.access_token_expiration_minute),
+            'exp': datetime.utcnow() + timedelta(days=settings.access_token_expiration_day, minutes=settings.access_token_expiration_minute),
             'iat': datetime.utcnow(),
             'sub': user_id
          }
       elif token_type == TokenType.refresh:
          secret = env("REFRESH_TOKEN_SECRET")
          payload = {
+            'exp': datetime.utcnow() + timedelta(days=settings.refresh_token_expiration_day, minutes=settings.refresh_token_expiration_minute),
             'iat': datetime.utcnow(),
             'sub': user_id
          }
@@ -62,7 +63,7 @@ class AuthHandler():
          }
 
 
-   # for validating using access token
+   # for validating an access token
    def auth_wrapper(self, auth: HTTPAuthorizationCredentials = Security(security)):
       return self.decode_token(auth.credentials, TokenType.access)
    
