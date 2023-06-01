@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, Request
 from models import NewUser, UserLogin, Profile, Token, TokenType
 from initialize import app, auth_handler
 from config import settings
+from datetime import datetime
 import bcrypt
 import validate
 
@@ -92,7 +93,7 @@ async def update_user_profile(profile_data: Profile, uid = Depends(auth_handler.
          user = r[0]
          
          wantsToChangeUsername = False
-         if profile_data.username != user['username']:
+         if profile_data.username != "" and profile_data.username != None and profile_data.username != user['username']:
             wantsToChangeUsername = True
          
          for key, value in profile_data.dict().items():
@@ -100,7 +101,7 @@ async def update_user_profile(profile_data: Profile, uid = Depends(auth_handler.
                profile_data.__setattr__(key, user[key])
                
          if settings.allow_username_change == False:
-            q = "UPDATE accounts SET name_first = $1, name_last = $2, image = $3, bio = $4 WHERE uid = $5;"
+            q = "UPDATE accounts SET name_first=$1, name_last=$2, image=$3, bio=$4, updated_at=CURRENT_TIMESTAMP WHERE uid=$5;"
             await app.state.db.execute(q, profile_data.name_first, profile_data.name_last, profile_data.image, profile_data.bio, uid['payload'])
             
             if wantsToChangeUsername:
@@ -123,7 +124,7 @@ async def update_user_profile(profile_data: Profile, uid = Depends(auth_handler.
                      "detail" : "Username already exists"
                   }
                
-            q = "UPDATE accounts SET name_first = $1, name_last = $2, image = $3, username = $4, bio = $5 WHERE uid = $6;"
+            q = "UPDATE accounts SET name_first = $1, name_last = $2, image = $3, username = $4, bio = $5, updated_at=CURRENT_TIMESTAMP WHERE uid = $6;"
             await app.state.db.execute(q, profile_data.name_first, profile_data.name_last, profile_data.image, profile_data.username, profile_data.bio, uid['payload'])
          
          return {
