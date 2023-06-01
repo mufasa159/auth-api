@@ -39,36 +39,71 @@ async def get_users(username: str):
       raise HTTPException(status_code=500, detail=e)
 
 
-@app.get('/users', summary="Get all users", status_code=200)
-async def get_users(uid = Depends(auth_handler.auth_wrapper)):
-   try:
-      
-      if uid['payload'] is not None:
+@app.post('/users/{username}', summary="Update a user profile", status_code=200)
+async def update_user_profile(profile_data: Profile, uid = Depends(auth_handler.auth_wrapper)):
+   if uid['payload'] is None:
+      return {
+         "status_code" : 401,
+         "detail" : uid['message']
+      }
+   else:
+      try:
          q = "SELECT * FROM accounts WHERE uid = $1;"
          r = await app.state.db.fetch(q, uid['payload'])
          
          if len(r) == 0:
             return {
-               "status_code": 201,
-               "detail" : "Invalid UID in token"
+               "status_code": 404,
+               "detail" : "User not found"
             }
          
          user = r[0]
          
-         if user['role'] == "admin":
-            return await app.state.db.fetch("SELECT * FROM accounts;")
+         wantsToChangeUsername = False
+         if profile_data.username != user['username']:
+            wantsToChangeUsername = True
+         
+         for key, value in profile_data.dict().items():
+            if value is None or value == "":
+               profile_data.__setattr__(key, user[key])
+               
+         if settings.allow_username_change == False:
+            q = "UPDATE accounts SET name_first = $1, name_last = $2, image = $3, bio = $4 WHERE uid = $5;"
+            await app.state.db.execute(q, profile_data.name_first, profile_data.name_last, profile_data.image, profile_data.bio, uid['payload'])
+            
+            if wantsToChangeUsername:
+               profile_data.__setattr__('username', user['username'])
+               return {
+                  "status_code": 200,
+                  "detail" : {
+                     "message" : "Profile updated partially. Username cannot be changed.",
+                     "profile" : profile_data
+                  }
+               }
          else:
-            return {
-               "status_code" : 401,
-               "detail" : "You are not authorized to access this resource"
-            }
-      else:
+            if wantsToChangeUsername:
+               q = "SELECT * FROM accounts WHERE username = $1;"
+               r = await app.state.db.fetch(q, profile_data.username)
+               
+               if len(r) > 0:
+                  return {
+                     "status_code": 409,
+                     "detail" : "Username already exists"
+                  }
+               
+            q = "UPDATE accounts SET name_first = $1, name_last = $2, image = $3, username = $4, bio = $5 WHERE uid = $6;"
+            await app.state.db.execute(q, profile_data.name_first, profile_data.name_last, profile_data.image, profile_data.username, profile_data.bio, uid['payload'])
+         
          return {
-            "status_code" : 401,
-            "detail" : uid['message']
+            "status_code": 200,
+            "detail" : {
+               "message" : "Profile updated successfully",
+               "profile" : profile_data
+            }
          }
-   except Exception as e:
-      raise HTTPException(status_code=500, detail=e)
+         
+      except Exception as e:
+         raise HTTPException(status_code=500, detail=e)
 
 
 @app.post('/register', summary="Register")
