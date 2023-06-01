@@ -12,7 +12,39 @@ async def root():
    }
 
 
-@app.get('/users/{username}', summary="Get a user", status_code=200)
+@app.get('/users', summary="Get all users", status_code=200)
+async def get_users(uid = Depends(auth_handler.auth_wrapper)):
+   try:
+      if uid['payload'] is not None:
+         q = "SELECT * FROM accounts WHERE uid = $1;"
+         r = await app.state.db.fetch(q, uid['payload'])
+         
+         if len(r) == 0:
+            return {
+               "status_code": 201,
+               "detail" : "Invalid UID in token"
+            }
+         
+         user = r[0]
+         
+         if user['role'] == "admin":
+            return await app.state.db.fetch("SELECT * FROM accounts;")
+         else:
+            return {
+               "status_code" : 401,
+               "detail" : "You are not authorized to access this resource"
+            }
+      else:
+         return {
+            "status_code" : 401,
+            "detail" : uid['message']
+         }
+         
+   except Exception as e:
+      raise HTTPException(status_code=500, detail=e)
+
+
+@app.get('/users/{username}', summary="Get a user profile", status_code=200)
 async def get_users(username: str):
    try:
       q = "SELECT * FROM accounts WHERE username = $1;"
@@ -215,6 +247,9 @@ async def login(user_data: UserLogin, request: Request):
 
 @app.post('/token', summary="Generate access token")
 async def validate_refresh_token(token: Token):
+   """
+   When access token is expired, the client must send a valid refresh token to generate a new access token.
+   """
    try:      
       uid = auth_handler.decode_token(token.value, TokenType.refresh)
       
@@ -225,14 +260,12 @@ async def validate_refresh_token(token: Token):
          }
       
       new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
-      new_refresh_token = auth_handler.encode_token(uid['payload'], TokenType.refresh)
       
       return {
          "status_code" : 200,
          "detail" : {
             "message": "Token refreshed successfully",
-            "access_token": new_access_token,
-            "refresh_token": new_refresh_token
+            "access_token": new_access_token
          }
       }
       
@@ -245,6 +278,10 @@ async def validate_refresh_token(token: Token):
 
 @app.post('/validate', summary="Validate access token")
 def validate_access_token(token: Token):
+   """
+   Why would you need this? So that you don't need to calculate when the token has expired
+   or if it's invalid from the client side. It will cost you a HTTP request though.
+   """
    try:
       uid = auth_handler.decode_token(token.value, TokenType.access)
       
@@ -270,10 +307,10 @@ def validate_access_token(token: Token):
 async def delete_refresh_token():
    """
    Doesn't do anything. Just here for documentation purposes.  
-   If you wish to logout, just remove the token from your client.
+   If you wish to logout, just remove the tokens from your client.
    """
    return {
       "status_code" : 410,
-      "detail" : "This route is gone. Here's what you can do instead: (1) delete the token from your client, or (2) blacklist the token, or (3) make token expiration short and rotate them often."
+      "detail" : "This route is gone. Here's what you can do instead: (1) delete the tokens from your client, or (2) blacklist the tokens, or (3) make token expiration short and rotate them often."
    }
 
