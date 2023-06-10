@@ -16,7 +16,7 @@ class AuthHandler():
       if token_type == TokenType.access:
          secret = env("ACCESS_TOKEN_SECRET")
          payload = {
-            'exp': datetime.utcnow() + timedelta(days=settings.access_token_expiration_day, minutes=settings.access_token_expiration_minute),
+            'exp': datetime.utcnow() + timedelta(days=0, minutes=settings.access_token_expiration_minute),
             'iat': datetime.utcnow(),
             'sub': user_id
          }
