@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.config import Config
 from auth import AuthHandler
+from config import settings
 import asyncpg
 
 
@@ -10,7 +11,7 @@ auth_handler = AuthHandler()
 app = FastAPI(
    title = "Authentication API",
    description = "Authentication middleware for user accounts management built with FastAPI and JWT tokens",
-   version = "2.0",
+   version = "2.1",
    contact = {
       "name"  : "mufasa159",
       "url"   : "https://mufasa.cc",
@@ -25,7 +26,7 @@ app = FastAPI(
 )
 app.add_middleware(
    CORSMiddleware,
-   allow_origins=["*"],
+   allow_origins=settings.allowed_hosts,
    allow_credentials=True,
    allow_methods=["*"],
    allow_headers=["*"],
