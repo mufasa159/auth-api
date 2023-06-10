@@ -8,7 +8,7 @@ class Configuration(BaseSettings):
    access_token_expiration_minute: int  = 60
    refresh_token_expiration_day: int    = 7
    refresh_token_expiration_minute: int = 0
-   refresh_token_session_only: bool     = True
+   session_only: bool                   = True
    allow_username_change: bool          = False
    environment: str                     = "development"
 

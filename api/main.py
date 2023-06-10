@@ -203,7 +203,7 @@ async def register(user_data: NewUser):
 @app.post('/login', summary="Login")
 async def login(user_data: UserLogin, request: Request, response: Response):
    """
-   Returns access token and refresh token as HttpOnly secure cookies.
+   Returns access token as response body and refresh token as HttpOnly secure cookie.
    """
    try:
       q = "SELECT * FROM accounts WHERE username = $1;"
@@ -233,12 +233,14 @@ async def login(user_data: UserLogin, request: Request, response: Response):
          
          response = JSONResponse(content = {
             "status_code" : 200,
-            "detail" : "Login successful"
+            "detail" : {
+               "message": "Login successful",
+               "access_token": access_token
+            }
          })
 
-         # return access token and refresh token as cookies
-         response.set_cookie(key="_atk", value=access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
-         if settings.refresh_token_session_only:
+         # return refresh token as cookie
+         if settings.session_only:
             response.set_cookie(key="_rtk", value=refresh_token, httponly=True, path="/", secure=True, samesite="lax")
          else:
             rtk_exp = (settings.refresh_token_expiration_day * 24 * 60 * 60) + (settings.refresh_token_expiration_minute * 60)
@@ -274,13 +276,18 @@ async def renew_access_token(request: Request, response: Response):
             "detail" : uid["message"] + ". Please login again."
          }
       
-      new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
-      
       response = JSONResponse(content = {
          "status_code" : 200,
          "detail" : "Token refreshed successfully"
       })
-      response.set_cookie(key="_atk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
+      
+      if settings.session_only:
+         response.delete_cookie(key="_atk", path="/")
+         new_refresh_token_as_session = auth_handler.encode_token(uid['payload'], TokenType.refresh)
+         response.set_cookie(key="_rtk", value=new_refresh_token_as_session, httponly=True, path="/", secure=True, samesite="lax")
+      else:
+         new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
+         response.set_cookie(key="_atk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
       
       return response
       
@@ -294,10 +301,11 @@ async def renew_access_token(request: Request, response: Response):
 @app.get('/token', summary="Renew or validate access token")
 async def token_handler(request: Request, response : Response):
    """
+   WORK IN PROGRESS. WILL BE FIXED SOON.  
    To check validity of an access token. If the access token is expired or doesn't exist, it 
    will automatically be renewed if a valid refresh token is provided.  
    """
-   if '_atk' not in request.cookies:
+   if '_rtk' not in request.cookies:
       return await renew_access_token(request, response)
 
    try:
