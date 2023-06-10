@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from fastapi import Query
 from enum import Enum
+
 
 class Role(Enum):
    admin = "admin"
@@ -32,7 +32,3 @@ class Profile(BaseModel):
 class TokenType(Enum):
    access = "access"
    refresh = "refresh"
-
-   
-class Token(BaseModel):
-   value: str = Query(max_length=255, min_length=64)
