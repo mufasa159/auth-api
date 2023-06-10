@@ -2,7 +2,7 @@
 
 [project]
 name = "Authentication API"
-version = "2.0"
+version = "2.1"
 description = "Authentication middleware for user accounts management"
 authors = [
     {name = "mufasa159", email = "hello@mufasa.cc"},
