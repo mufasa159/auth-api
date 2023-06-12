@@ -240,11 +240,8 @@ async def login(user_data: UserLogin, request: Request, response: Response):
          })
 
          # return refresh token as cookie
-         if settings.session_only:
-            response.set_cookie(key="_rtk", value=refresh_token, httponly=True, path="/", secure=True, samesite="lax")
-         else:
-            rtk_exp = (settings.refresh_token_expiration_day * 24 * 60 * 60) + (settings.refresh_token_expiration_minute * 60)
-            response.set_cookie(key="_rtk", value=refresh_token, httponly=True, max_age=rtk_exp, path="/")
+         rtk_exp = (settings.refresh_token_expiration_day * 24 * 60 * 60) + (settings.refresh_token_expiration_minute * 60)
+         response.set_cookie(key="_rtk", value=refresh_token, httponly=True, max_age=rtk_exp, path="/")
          
          return response
       
@@ -258,22 +255,25 @@ async def login(user_data: UserLogin, request: Request, response: Response):
       raise HTTPException(status_code=500, detail=e)
 
 
-async def renew_access_token(request: Request, response: Response):
+@app.get('/token', summary="Generate access token")
+async def generate_access_token(request: Request, response : Response):
+   """
+   Generates new access token given a valid refresh token as cookie.  
+   """
    if '_rtk' not in request.cookies:
       return {
          "status_code" : 401,
-         "detail" : "Missing refresh token. Please login again."
+         "detail" : "Missing refresh token"
       }
       
    try:
       uid = auth_handler.decode_token(request.cookies['_rtk'], TokenType.refresh)
       
-      if uid["message"] is not None:
-         response.delete_cookie(key="_atk", path="/")
+      if uid["message"] is not None: # suspicious activity
          response.delete_cookie(key="_rtk", path="/")
          return {
             "status_code" : 401,
-            "detail" : uid["message"] + ". Please login again."
+            "detail" : uid["message"]
          }
       
       response = JSONResponse(content = {
@@ -281,14 +281,9 @@ async def renew_access_token(request: Request, response: Response):
          "detail" : "Token refreshed successfully"
       })
       
-      if settings.session_only:
-         response.delete_cookie(key="_atk", path="/")
-         new_refresh_token_as_session = auth_handler.encode_token(uid['payload'], TokenType.refresh)
-         response.set_cookie(key="_rtk", value=new_refresh_token_as_session, httponly=True, path="/", secure=True, samesite="lax")
-      else:
-         new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
-         response.set_cookie(key="_atk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
-      
+      new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
+      response.set_cookie(key="_rtk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
+   
       return response
       
    except Exception as e:
@@ -298,52 +293,22 @@ async def renew_access_token(request: Request, response: Response):
       )
 
 
-@app.get('/token', summary="Renew or validate access token")
-async def token_handler(request: Request, response : Response):
-   """
-   WORK IN PROGRESS. WILL BE FIXED SOON.  
-   To check validity of an access token. If the access token is expired or doesn't exist, it 
-   will automatically be renewed if a valid refresh token is provided.  
-   """
-   if '_rtk' not in request.cookies:
-      return await renew_access_token(request, response)
-
-   try:
-      uid = auth_handler.decode_token(request.cookies['_atk'], TokenType.access)
-      
-      if uid["message"] == "Token has expired":
-         return await renew_access_token(request, response)
-
-      if uid["message"] == "Invalid token":
-         response.delete_cookie(key="_atk", path="/")
-         response.delete_cookie(key="_rtk", path="/")
-         return {
-            "status_code" : 401,
-            "detail" : uid["message"]
-         }
-
-      return {
-         "status_code" : 200,
-         "detail" : "Token is valid"
-      }
-
-   except Exception as e:
-      raise HTTPException(
-         status_code = 500,
-         detail = e
-      )
-
-
 @app.delete('/logout', summary="Delete tokens")
 async def delete_tokens(response: Response):
    """
-   Removes both access and refresh tokens from client.
+   Removes refresh token from client.  
+   Make sure to remove access token from client as well.
    """
-   response.delete_cookie(key="_atk", path="/")
-   response.delete_cookie(key="_rtk", path="/")
+   try:
+      response.delete_cookie(key="_rtk", path="/")
    
-   return {
-      "status_code" : 200,
-      "detail" : "Logged out successfully"
-   }
-
+      return {
+         "status_code" : 200,
+         "detail" : "Removed cookie successfully"
+      }
+      
+   except Exception as e:
+      raise HTTPException(
+         status_code=500,
+         detail=e
+      )
