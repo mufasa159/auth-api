@@ -10,7 +10,7 @@ env = Config("../.env")
 auth_handler = AuthHandler()
 app = FastAPI(
    title = "Authentication API",
-   description = "Authentication middleware for user accounts management built with FastAPI and JWT tokens",
+   description = "Authentication API for user accounts management built with FastAPI and JWT tokens",
    version = "2.1",
    contact = {
       "name"  : "mufasa159",
