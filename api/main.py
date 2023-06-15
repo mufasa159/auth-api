@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import Response, JSONResponse
-from models import NewUser, UserLogin, Profile, TokenType, Role
+from models import NewUser, UserLogin, ProfileWithNoAuth, ProfileWithAuth, TokenType, Role
 from initialize import app, auth_handler
 from config import settings
 import bcrypt
@@ -46,7 +46,7 @@ async def get_users(uid = Depends(auth_handler.auth_wrapper)):
 
 
 @app.get('/users/{username}', summary="Get a user profile", status_code=200)
-async def get_user(username: str):
+async def get_user(username: str, request: Request):
    try:
       q = "SELECT * FROM accounts WHERE username = $1;"
       r = await app.state.db.fetch(q, username)
@@ -59,21 +59,51 @@ async def get_user(username: str):
       
       user = r[0]
       
-      user_data = Profile(
-         name_first = user['name_first'],
-         name_last  = user['name_last'],
-         image      = user['image'],
-         username   = user['username'],
-         bio        = user['bio']
-      )
-      return user_data
+      if '_atk' in request.cookies:
+         uid = auth_handler.decode_token(request.cookies.get("_atk"), TokenType.access)
+         
+         if uid['payload'] is not None and user['uid'] == uid['payload']:
+            user_data = ProfileWithAuth(
+               name_first      = user['name_first'],
+               name_last       = user['name_last'],
+               image           = user['image'],
+               username        = user['username'],
+               bio             = user['bio'],
+               email           = user['email'],
+               last_login_at   = user['last_login_at'],
+               last_login_ip   = user['last_login_ip'],
+               created_at      = user['created_at'],
+               updated_at      = user['updated_at'],
+               confirmed_email = user['confirmed_email']
+            )
+            return {
+               "status_code": 200,
+               "detail" : user_data
+            }
+         else:
+            return {
+               "status_code" : 401,
+               "detail" : uid['message']
+            }
+      else:
+         user_data = ProfileWithNoAuth(
+            name_first = user['name_first'],
+            name_last  = user['name_last'],
+            image      = user['image'],
+            username   = user['username'],
+            bio        = user['bio']
+         )
+         return {
+            "status_code": 200,
+            "detail" : user_data
+         }
    
    except Exception as e:
       raise HTTPException(status_code=500, detail=e)
 
 
 @app.post('/users/{username}', summary="Update a user profile", status_code=200)
-async def update_user(profile_data: Profile, uid = Depends(auth_handler.auth_wrapper)):
+async def update_user(profile_data: ProfileWithNoAuth, uid = Depends(auth_handler.auth_wrapper)):
    if uid['payload'] is None:
       return {
          "status_code" : 401,
@@ -234,14 +264,15 @@ async def login(user_data: UserLogin, request: Request, response: Response):
          response = JSONResponse(content = {
             "status_code" : 200,
             "detail" : {
-               "message": "Login successful",
-               "access_token": access_token
+               "message": "Login successful"
             }
          })
 
-         # return refresh token as cookie
+         # return access and refresh token as cookie
          rtk_exp = (settings.refresh_token_expiration_day * 24 * 60 * 60) + (settings.refresh_token_expiration_minute * 60)
-         response.set_cookie(key="_rtk", value=refresh_token, httponly=True, max_age=rtk_exp, path="/")
+         atk_exp = settings.access_token_expiration_minute * 60
+         response.set_cookie(key="_rtk", value=refresh_token, httponly=True, max_age=rtk_exp, path="/", secure=True, samesite="Lax")
+         response.set_cookie(key="_atk", value=access_token, httponly=True, max_age=atk_exp, path="/", secure=True, samesite="Lax")
          
          return response
       
@@ -255,35 +286,32 @@ async def login(user_data: UserLogin, request: Request, response: Response):
       raise HTTPException(status_code=500, detail=e)
 
 
-@app.get('/token', summary="Generate access token")
-async def generate_access_token(request: Request, response : Response):
-   """
-   Generates new access token given a valid refresh token as cookie.  
-   """
+async def renew_access_token(request: Request, response: Response):
    if '_rtk' not in request.cookies:
       return {
          "status_code" : 401,
-         "detail" : "Missing refresh token"
+         "detail" : "Missing refresh token. Please login again."
       }
       
    try:
       uid = auth_handler.decode_token(request.cookies['_rtk'], TokenType.refresh)
       
-      if uid["message"] is not None: # suspicious activity
+      if uid["message"] is not None:
+         response.delete_cookie(key="_atk", path="/")
          response.delete_cookie(key="_rtk", path="/")
          return {
             "status_code" : 401,
-            "detail" : uid["message"]
+            "detail" : uid["message"] + ". Please login again."
          }
+      
+      new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
       
       response = JSONResponse(content = {
          "status_code" : 200,
          "detail" : "Token refreshed successfully"
       })
+      response.set_cookie(key="_atk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
       
-      new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
-      response.set_cookie(key="_rtk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
-   
       return response
       
    except Exception as e:
@@ -293,18 +321,53 @@ async def generate_access_token(request: Request, response : Response):
       )
 
 
+@app.get('/token', summary="Renew or validate access token")
+async def token_handler(request: Request, response: Response):
+   """
+   To check validity of an access token. If the access token is expired or doesn't exist, it 
+   will automatically be renewed if a valid refresh token is provided.  
+   """
+   if '_atk' not in request.cookies:
+      return await renew_access_token(request, response)
+
+   try:
+      uid = auth_handler.decode_token(request.cookies['_atk'], TokenType.access)
+      
+      if uid["message"] == "Token has expired":
+         return await renew_access_token(request, response)
+
+      if uid["message"] == "Invalid token":
+         response.delete_cookie(key="_atk", path="/")
+         response.delete_cookie(key="_rtk", path="/")
+         return {
+            "status_code" : 401,
+            "detail" : uid["message"]
+         }
+
+      return {
+         "status_code" : 200,
+         "detail" : "Token is valid"
+      }
+
+   except Exception as e:
+      raise HTTPException(
+         status_code = 500,
+         detail = e
+      )
+
+
 @app.delete('/logout', summary="Delete tokens")
 async def delete_tokens(response: Response):
    """
-   Removes refresh token from client.  
-   Make sure to remove access token from client as well.
+   Removes access and refresh token from client.  
    """
    try:
       response.delete_cookie(key="_rtk", path="/")
+      response.delete_cookie(key="_atk", path="/")
    
       return {
          "status_code" : 200,
-         "detail" : "Removed cookie successfully"
+         "detail" : "Removed cookies successfully"
       }
       
    except Exception as e:

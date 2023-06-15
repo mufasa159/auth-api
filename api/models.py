@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from pydantic.datetime_parse import datetime
 from enum import Enum
 
 
@@ -21,12 +22,26 @@ class UserLogin(BaseModel):
    password: str
    
 
-class Profile(BaseModel):
+class ProfileWithNoAuth(BaseModel):
    name_first: str
    name_last: str
    image: str | None = None
    username: str
    bio: str | None = None
+   
+
+class ProfileWithAuth(BaseModel):
+   name_first: str
+   name_last: str
+   image: str | None = None
+   username: str
+   bio: str | None = None
+   email: str
+   last_login_at: datetime
+   last_login_ip: str
+   created_at: datetime
+   updated_at: datetime | None = None
+   confirmed_email: bool
 
 
 class TokenType(Enum):
