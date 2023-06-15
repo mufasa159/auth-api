@@ -1,8 +1,9 @@
-# Authentication API
+# A Simple Authentication API
 
 **Contents**
 - [Setup Local Dev Environment](#setup-local-dev-environment)
-- [Connect to Database](#connect-to-database)
+- [Connection to Database](#connect-to-database)
+- [Usage and Examples](#usage-and-examples)
 
 ---
 
@@ -56,7 +57,7 @@ FastAPI uses Swagger UI and ReDoc to display all the API routes and/or test them
 
 ---
 
-## Connect to Database
+## Connection to Database
 
 Lookup how to install and run Postgres on your operating system and how to create a Postgres database. After creating a database, run the SQL commands in `/db/schema.sql` to create a new table for the users. Then update the `.env` file with the database credentials.
 
@@ -65,3 +66,51 @@ Once you have the database set up, if you want to connect to the database separa
 - [PgAdmin4](https://www.pgadmin.org/)
 
 If you wish to use PSQL shell to interact with the DB, search online how to do that.
+
+---
+
+## Usage and Examples
+
+**Step 1**  
+In `/api/config.py` file, update the allowed hosts to the specific domains of your client. You cannot use `["*"]` for cross-origin security reasons. For example, if your client is running at `http://localhost:3000`, change the `allowed_hosts` value as shown below:
+```
+allowed_hosts: list = ["http://localhost:3000"]
+```
+
+**Step 2**  
+You're free to use the tokens however you want. But usually the access token are securely stored in Cookie, localStorage, sessionStorage, browser memory etc. [Auth0 recommends storing tokens in browser memory as the most secure option](https://auth0.com/docs/secure/security-guidance/data-security/token-storage#single-page-applications).
+
+
+|Token Storage|Potential Vulnerability|
+|--|--|
+|sessionStorage / localStorage | XSS attack |
+|Cookie | CSRF attack (can be prevented with `SameSite` and `HttpOnly` options, but ultimately depends on the app.) |
+|Browser memory (web workers, store, context, JS closures etc.) |  Won't work with page refresh.<br/> Memory leakage if not handled properly. |
+|Backend database | Don't do it.|
+
+In the end, it really depends on the app you're building and how secure it is, to use one of the methods above.
+
+**JavaScript**
+```
+// login
+
+const api = "http://127.0.0.1:8000";
+
+fetch (`${api}/login`, {
+   method: "POST",
+   body: JSON.stringify({
+      username : "your-username",
+      password : "your-password"
+   }),
+   credentials: "include"
+})
+.then(response => response.json())
+.then(data => {
+   if (data.status_code === 200) {
+      // store the access token (data.detail.access_token) somewhere.
+      window.location.href = '/protected';
+   } else {
+      alert(data.detail);
+   }
+})
+```
