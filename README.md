@@ -50,7 +50,7 @@ openssl rand -hex 32
 Start API server using the following command:
 ```
 cd api
-uvicorn main:app --reload  
+pdm run uvicorn main:app --reload  
 ```
 
 FastAPI uses Swagger UI and ReDoc to display all the API routes and/or test them. Once the server is running locally, go to `/docs` or `/redoc` route to see the API documentation.
