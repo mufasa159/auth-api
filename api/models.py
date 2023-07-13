@@ -8,7 +8,7 @@ class Role(Enum):
    user = "user"
  
 
-class NewUser(BaseModel):
+class UserSignUp(BaseModel):
    name_first: str
    name_last: str
    username: str
@@ -16,7 +16,7 @@ class NewUser(BaseModel):
    password: str
 
 
-class UserLogin(BaseModel):
+class UserSignIn(BaseModel):
    username: str
    password: str
    

@@ -1,19 +1,19 @@
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import Response, JSONResponse
-from models import NewUser, UserLogin, Profile, TokenType, Role
+from models import UserSignUp, UserSignIn, Profile, TokenType, Role
 from initialize import app, auth_handler
 from config import settings
 import bcrypt
 import validate
 
-@app.get("/")
+@app.get("/", tags=["Default"])
 async def root():
    return {
       "message": "Welcome to Authentication API v2.0"
    }
 
 
-@app.get('/users', summary="Get all users", status_code=200)
+@app.get('/users', summary="Get all users", status_code=200, tags=["Users"])
 async def get_users(uid = Depends(auth_handler.auth_wrapper)):
    try:
       if uid['payload'] is not None:
@@ -45,7 +45,7 @@ async def get_users(uid = Depends(auth_handler.auth_wrapper)):
       raise HTTPException(status_code=500, detail=e)
 
 
-@app.get('/users/{username}', summary="Get a user profile", status_code=200)
+@app.get('/users/{username}', summary="Get a user profile", status_code=200, tags=["Users"])
 async def get_user(username: str):
    try:
       q = "SELECT * FROM accounts WHERE username = $1;"
@@ -72,7 +72,7 @@ async def get_user(username: str):
       raise HTTPException(status_code=500, detail=e)
 
 
-@app.post('/users/{username}', summary="Update a user profile", status_code=200)
+@app.post('/users/{username}', summary="Update a user profile", status_code=200, tags=["Users"])
 async def update_user(profile_data: Profile, uid = Depends(auth_handler.auth_wrapper)):
    if uid['payload'] is None:
       return {
@@ -139,8 +139,8 @@ async def update_user(profile_data: Profile, uid = Depends(auth_handler.auth_wra
          raise HTTPException(status_code=500, detail=e)
 
 
-@app.post('/register', summary="Register")
-async def register(user_data: NewUser):
+@app.post('/register', summary="Register", tags=["Authentication"])
+async def register(user_data: UserSignUp):
    """
    Register a new user. Make sure to provide a unique `username`, a valid `email` address
    and a `password` that is at least 8 characters long.
@@ -200,8 +200,8 @@ async def register(user_data: NewUser):
       raise HTTPException(status_code=500, detail=e)
 
 
-@app.post('/login', summary="Login")
-async def login(user_data: UserLogin, request: Request, response: Response):
+@app.post('/login', summary="Login", tags=["Authentication"])
+async def login(user_data: UserSignIn, request: Request, response: Response):
    """
    Returns access token as response body and refresh token as HttpOnly secure cookie.
    """
@@ -255,7 +255,7 @@ async def login(user_data: UserLogin, request: Request, response: Response):
       raise HTTPException(status_code=500, detail=e)
 
 
-@app.get('/token', summary="Generate access token")
+@app.get('/token', summary="Generate access token", tags=["Authentication"])
 async def generate_access_token(request: Request, response : Response):
    """
    Generates new access token given a valid refresh token as cookie.  
@@ -276,14 +276,16 @@ async def generate_access_token(request: Request, response : Response):
             "detail" : uid["message"]
          }
       
+      new_access_token = auth_handler.encode_token(uid['payload'], TokenType.refresh)
+
       response = JSONResponse(content = {
          "status_code" : 200,
-         "detail" : "Token refreshed successfully"
+         "detail" : {
+            "message" : "Token refreshed successfully",
+            "access_token" : new_access_token
+         }
       })
       
-      new_access_token = auth_handler.encode_token(uid['payload'], TokenType.access)
-      response.set_cookie(key="_rtk", value=new_access_token, httponly=True, max_age=settings.access_token_expiration_minute*60, path="/", secure=True, samesite="lax")
-   
       return response
       
    except Exception as e:
@@ -293,7 +295,7 @@ async def generate_access_token(request: Request, response : Response):
       )
 
 
-@app.delete('/logout', summary="Delete tokens")
+@app.delete('/logout', summary="Delete tokens", tags=["Authentication"])
 async def delete_tokens(response: Response):
    """
    Removes refresh token from client.  
